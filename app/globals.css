@@ -1,0 +1,322 @@
+@import "tailwindcss";
+
+:root {
+  /* ── Apple-inspired palette, strictly per DESIGN.md §1 ── */
+  --color-brand: #0071e3;
+  --color-brand-hover: #0077ed;
+  --color-brand-pressed: #0060c7;
+  --color-brand-subtle: #e8f2fd;
+  --color-surface: #ffffff;
+  --color-surface-secondary: #f5f5f7;
+  --color-surface-tertiary: #e8e8ed;
+  --color-text-primary: #1d1d1f;
+  --color-text-secondary: #86868b;
+  --color-text-tertiary: #aeaeb2;
+  --color-text-quaternary: #d2d2d7;
+  --color-border: rgba(0, 0, 0, 0.06);
+  --color-border-strong: rgba(0, 0, 0, 0.1);
+  --color-success: #34c759;
+  --color-warning: #ff9500;
+  --color-error: #ff3b30;
+
+  /* Shadows — DESIGN.md §4: single-layer, opacity-only, no spread */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.15);
+
+  /* Radii — DESIGN.md §4 */
+  --radius-none: 0px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  /* Typography */
+  --font-display: "SF Pro Display", -apple-system, "PingFang SC", "Hiragino Sans GB", sans-serif;
+  --font-body: "SF Pro Text", -apple-system, "PingFang SC", "Hiragino Sans GB", sans-serif;
+  --font-mono: "SF Mono", "Cascadia Code", monospace;
+}
+
+/* ── Dark mode — DESIGN.md §1: surface→#000, text-primary→#f5f5f7 ── */
+[data-theme="dark"] {
+  --color-surface: #000000;
+  --color-surface-secondary: #1d1d1f;
+  --color-surface-tertiary: #2d2d2f;
+  --color-text-primary: #f5f5f7;
+  --color-text-secondary: #a1a1a6;
+  --color-text-tertiary: #6e6e73;
+  --color-text-quaternary: #3d3d41;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-strong: rgba(255, 255, 255, 0.14);
+  --color-brand-subtle: rgba(0, 113, 227, 0.18);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+
+/* System preference as fallback when no manual choice */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --color-surface: #000000;
+    --color-surface-secondary: #1d1d1f;
+    --color-surface-tertiary: #2d2d2f;
+    --color-text-primary: #f5f5f7;
+    --color-text-secondary: #a1a1a6;
+    --color-text-tertiary: #6e6e73;
+    --color-text-quaternary: #3d3d41;
+    --color-border: rgba(255, 255, 255, 0.08);
+    --color-border-strong: rgba(255, 255, 255, 0.14);
+    --color-brand-subtle: rgba(0, 113, 227, 0.18);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* ── Base ── */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: var(--color-surface-secondary);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  font-size: 17px;
+  letter-spacing: 0;
+  line-height: 1.47059;
+}
+
+/* ── Typography — DESIGN.md §2 ── */
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.022em;
+}
+
+/* ── Smooth transitions — DESIGN.md §15 ── */
+a, button, input, textarea, select {
+  transition: all 0.28s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* ── Frosted glass — DESIGN.md §8 Navigation Bar ── */
+.glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 0.5px solid var(--color-border);
+}
+
+[data-theme="dark"] .glass {
+  background: rgba(29, 29, 31, 0.85);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .glass {
+    background: rgba(29, 29, 31, 0.85);
+  }
+}
+
+/* ── Reveal animation — DESIGN.md §15 staggered list entry ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes statBounce {
+  0%, 100% { transform: scale(1); }
+  35% { transform: scale(1.12) rotate(-1.5deg); }
+  62% { transform: scale(0.96) rotate(1deg); }
+}
+
+@keyframes refreshConfetti {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.2) rotate(0deg);
+  }
+  12% {
+    opacity: 1;
+  }
+  58% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(1) rotate(var(--r));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y) + 14px)) scale(0.92) rotate(calc(var(--r) + 34deg));
+  }
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.5s cubic-bezier(0, 0, 0.58, 1) both;
+}
+.stat-bounce:active {
+  animation: statBounce 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.refresh-confetti-piece {
+  animation: refreshConfetti 1.15s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.spring-hover {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, background-color 0.2s ease;
+}
+.spring-hover:hover {
+  transform: translateY(-2px) scale(1.05);
+}
+.home-float-pop {
+  transform-origin: center;
+  transform: rotate(var(--float-rotate, 0deg));
+  transition: transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.24s ease, filter 0.24s ease;
+  will-change: transform;
+}
+.home-float-pop:hover {
+  transform: translateY(-5px) scale(1.055) rotate(var(--float-rotate, 0deg));
+  filter: saturate(1.05);
+}
+.stagger-1 { animation-delay: 0.03s; }
+.stagger-2 { animation-delay: 0.06s; }
+.stagger-3 { animation-delay: 0.09s; }
+.stagger-4 { animation-delay: 0.12s; }
+.stagger-5 { animation-delay: 0.15s; }
+
+/* Playback status: external jumps stay neutral; embeddable playback gets a subtle positive tint. */
+.playback-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.playback-badge--embed {
+  background: rgba(178, 221, 90, 0.18);
+  color: #4f7805;
+  box-shadow: 0 4px 10px rgba(178, 221, 90, 0.10);
+}
+
+.playback-badge--external {
+  background: var(--color-surface-secondary);
+  color: var(--color-text-tertiary);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+}
+
+[data-theme="dark"] .playback-badge--embed {
+  background: rgba(178, 221, 90, 0.14);
+  color: #c7ff6a;
+}
+
+[data-theme="dark"] .playback-badge--external {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text-secondary);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+/* ── Profile dashboard local theme ── */
+.profile-page {
+  --profile-card: #ffffff;
+  --profile-soft: #f7f8fa;
+  --profile-raised: #ffffff;
+  --profile-line: rgba(149, 157, 165, 0.16);
+  --profile-shadow: 0 8px 24px rgba(149, 157, 165, 0.08);
+  --profile-shadow-hover: 0 12px 28px rgba(149, 157, 165, 0.14);
+  --profile-purple-soft: #f0edff;
+  --profile-blue-soft: #e8f8fe;
+  --profile-green-soft: #f2ffd8;
+  --profile-orange-soft: #fff0ea;
+  --color-surface: var(--profile-card);
+  --color-surface-secondary: var(--profile-soft);
+  --color-text-primary: #1d1d1f;
+  --color-text-secondary: #626975;
+  --color-text-tertiary: #9aa1ad;
+  --color-border: var(--profile-line);
+}
+
+.profile-card {
+  background: var(--profile-card);
+  border: 0;
+  border-radius: 20px;
+  box-shadow: var(--profile-shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.profile-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: var(--profile-shadow-hover);
+}
+
+[data-theme="dark"] .profile-page {
+  --profile-card: #242428;
+  --profile-soft: #1b1b1f;
+  --profile-raised: #2d2d33;
+  --profile-line: rgba(255, 255, 255, 0.08);
+  --profile-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
+  --profile-shadow-hover: 0 14px 36px rgba(0, 0, 0, 0.42);
+  --profile-purple-soft: rgba(108, 87, 255, 0.18);
+  --profile-blue-soft: rgba(15, 134, 173, 0.16);
+  --profile-green-soft: rgba(178, 221, 90, 0.14);
+  --profile-orange-soft: rgba(255, 94, 50, 0.16);
+  --color-text-primary: #f5f5f7;
+  --color-text-secondary: #c6c6cc;
+  --color-text-tertiary: #8d8d96;
+  --color-brand-subtle: rgba(0, 113, 227, 0.18);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .profile-page {
+    --profile-card: #242428;
+    --profile-soft: #1b1b1f;
+    --profile-raised: #2d2d33;
+    --profile-line: rgba(255, 255, 255, 0.08);
+    --profile-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
+    --profile-shadow-hover: 0 14px 36px rgba(0, 0, 0, 0.42);
+    --profile-purple-soft: rgba(108, 87, 255, 0.18);
+    --profile-blue-soft: rgba(15, 134, 173, 0.16);
+    --profile-green-soft: rgba(178, 221, 90, 0.14);
+    --profile-orange-soft: rgba(255, 94, 50, 0.16);
+    --color-text-primary: #f5f5f7;
+    --color-text-secondary: #c6c6cc;
+    --color-text-tertiary: #8d8d96;
+    --color-brand-subtle: rgba(0, 113, 227, 0.18);
+  }
+}
+
+/* ── Skeleton — DESIGN.md §14: static, no shimmer ── */
+.skeleton {
+  background: var(--color-surface-tertiary);
+  border-radius: 4px;
+}
+
+/* ── Focus ring — DESIGN.md §9 ── */
+*:focus-visible {
+  outline: 3px solid rgba(0, 113, 227, 0.4);
+  outline-offset: 2px;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--color-text-tertiary);
+  border-radius: 3px;
+}
+
+/* ── Selection ── */
+::selection {
+  background: var(--color-brand-subtle);
+  color: var(--color-brand);
+}
+
+/* ── Reduced motion — DESIGN.md §15 ── */
+@media (prefers-reduced-motion) {
+  *, *::before, *::after {
+    animation-duration: 0ms !important;
+    transition-duration: 0ms !important;
+  }
+}
+
+/* ── Safe area — DESIGN.md §8 Tab Bar ── */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

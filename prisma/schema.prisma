@@ -1,0 +1,222 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  profile        UserProfile?
+  checkins       VideoCheckIn[]
+  feedbacks      UserFeedback[]
+  plans          TrainingPlan[]
+  planInteractions PlanInteraction[]
+  recommendations DailyRecommendation[]
+  accounts       Account[]
+  sessions       Session[]
+  userVideos     UserVideo[]
+}
+
+model UserProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  goals       String   @default("[]")   // JSON array: 减脂/增肌/康复/体能/柔韧
+  fitnessLevel String  @default("beginner") // beginner/intermediate/professional
+  bodyConditions String @default("[]") // JSON array: 膝盖不适/腰椎问题/产后等
+  equipment   String   @default("[]")   // JSON array: 哑铃/弹力带/无器材等
+  availableTime String @default("30")   // 15/30/60 min
+  contraindications String @default("[]") // JSON array: 不能跳跃/不能弯腰等
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Video {
+  id            String   @id @default(cuid())
+  title         String
+  url           String
+  platform      String   // bilibili/xiaohongshu/douyin
+  duration      Int?     // seconds
+  thumbnailUrl  String?
+  sourceAuthor  String
+  sourceAuthorId String?
+  userId        String?  // DEPRECATED — use UserVideo instead. Kept for migration.
+  createdAt     DateTime @default(now())
+
+  tags         VideoTag[]
+  checkins     VideoCheckIn[]
+  feedbacks    UserFeedback[]
+  planItems    PlanItem[]
+  collections  UserVideo[]
+}
+
+model UserVideo {
+  id        String   @id @default(cuid())
+  userId    String
+  videoId   String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoId])
+}
+
+model Tag {
+  id       String @id @default(cuid())
+  name     String // 标签名如 减脂/核心/HIIT/零基础
+  category String // goal/muscle/type/intensity/contraindication/equipment/audience/duration
+  nameZh   String // 中文标签名
+
+  videos   VideoTag[]
+
+  @@unique([name, category])
+}
+
+model VideoTag {
+  id         String   @id @default(cuid())
+  videoId    String
+  tagId      String
+  confidence Float    @default(1.0) // 0.0-1.0
+  source     String   @default("ai") // ai/manual/user_feedback
+  evidence   String?  // 来自评论的原文引用
+  createdAt  DateTime @default(now())
+
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  tag   Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([videoId, tagId])
+}
+
+model UserFeedback {
+  id              String   @id @default(cuid())
+  userId          String
+  videoId         String
+  difficultyRating String  // too_easy/just_right/too_hard
+  bodyFeeling     String?  // no_discomfort/knee_pain/back_pain/shoulder_pain/other
+  bodyFeelingNote String?  // 身体感受备注
+  completionRate  String   // fully/partial/abandoned
+  recommend       Boolean  // true/false
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoId])
+}
+
+model TrainingPlan {
+  id              String   @id @default(cuid())
+  userId          String
+  title           String
+  description     String?
+  targetAudience  String   @default("[]") // JSON array of tags
+  isPublic        Boolean  @default(true)
+  isDaily         Boolean  @default(false)
+  likesCount      Int      @default(0)
+  favoritesCount  Int      @default(0)
+  followCount     Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items      PlanItem[]
+  interactions PlanInteraction[]
+}
+
+model PlanItem {
+  id          String @id @default(cuid())
+  planId      String
+  videoId     String
+  order       Int
+  note        String? // warmup/main/stretch
+  repeatCount Int    @default(1)
+
+  plan  TrainingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  video Video        @relation(fields: [videoId], references: [id], onDelete: Cascade)
+}
+
+model PlanInteraction {
+  id     String   @id @default(cuid())
+  userId String
+  planId String
+  type   String   // like/favorite/follow
+  createdAt DateTime @default(now())
+
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan TrainingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, planId, type])
+}
+
+model VideoCheckIn {
+  id        String   @id @default(cuid())
+  userId    String
+  videoId   String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([userId, videoId])
+  @@index([videoId, createdAt])
+}
+
+model DailyRecommendation {
+  id           String   @id @default(cuid())
+  userId       String
+  date         String   // YYYY-MM-DD，每人每天唯一
+  planId       String?
+  videoIds     String   @default("[]") // JSON array of video ids
+  reason       String?  // 推荐理由
+  feedback     String?  // user feedback on this recommendation
+  planData     String   @default("{}")   // JSON string: 完整方案数据（TodayPlanResult）
+  profileHash  String?                   // 画像指纹，变更时自动刷新
+  refreshCount Int      @default(0)      // 当日手动换一换次数
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+}

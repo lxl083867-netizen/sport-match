@@ -1,0 +1,19 @@
+{
+  "reference_id": "apple",
+  "description": "运动匹配平台 — 用户碎片化收藏运动教程视频后无法有效整合使用，需要一个将发现、收藏、训练计划融为一体的工具",
+  "mode": "inspired",
+  "delta_set": {
+    "axes": {
+      "color.hue_deg": 0,
+      "color.saturation_pct": 0,
+      "color.lightness_pct": 0,
+      "radius.delta_px": 0,
+      "density.shift": 0,
+      "tracking.shift": 0
+    },
+    "voiceHints": ["中文为主", "运动场景自然融入", "鼓励但不煽动"],
+    "matchedKeywords": ["premium", "minimal", "elegant", "confident", "serious"],
+    "warnings": ["Apple 的 serious/restrained 与运动品类的 energetic 存在天然张力 — 保留 Apple 克制基调，仅在产品摄影和视频内容区允许内容自身的能量"]
+  },
+  "bootstrapped_at": "2026-05-22T20:20:00+08:00"
+}
