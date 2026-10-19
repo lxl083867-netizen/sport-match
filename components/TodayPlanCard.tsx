@@ -20,6 +20,13 @@ interface PlanVideo {
   repeatCount: number;
   matchReasons: string[];
   phaseReason: string;
+  scoreBreakdown?: Array<{
+    rule: string;
+    label: string;
+    delta: number;
+    field?: string;
+    value?: string;
+  }>;
 }
 
 interface CollectionInsight {
@@ -57,6 +64,13 @@ interface Props {
       detail: string;
       tone: "collection" | "fill" | "warn" | "playback" | "feedback";
       videoId?: string;
+      evidence?: {
+        type: string;
+        field?: string;
+        value?: string;
+        sourceCount?: number;
+        rule?: string;
+      };
     }>;
     goal: string;
   } | null;
@@ -605,6 +619,11 @@ export default function TodayPlanCard({
                           <div key={i} className="flex items-center gap-2 text-[12px]">
                             <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${explanationToneClass(item.tone)}`}>{item.label}</span>
                             <span className="text-[var(--color-text-tertiary)]">{item.detail}</span>
+                            {item.evidence?.field && (
+                              <span className="hidden shrink-0 rounded-full bg-[var(--color-surface)] px-1.5 py-0.5 text-[10px] text-[var(--color-text-quaternary)] sm:inline">
+                                依据：{item.evidence.field}
+                              </span>
+                            )}
                           </div>
                         ))}
                       </div>

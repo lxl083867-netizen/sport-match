@@ -3,6 +3,7 @@ import { getRecommendations, type CollectionTagProfile } from "./recommendation"
 import {
   PHASE_TAGS,
   classifyVideos,
+  getScoreBreakdown,
   getReasons,
   parseTimeBudget,
   pick,
@@ -12,6 +13,7 @@ import {
 import { getFeedbackHash, getFeedbackSignals } from "./today-plan-feedback";
 import { buildPlanExplanation } from "./today-plan-explanation";
 import { extractCollectionProfile, getCollectionInsights } from "./today-plan-insights";
+import { assessPlanQuality, type PlanQualityReport } from "./today-plan-quality";
 
 export { extractCollectionProfile, getCollectionInsights, getFeedbackHash };
 
@@ -28,6 +30,13 @@ export interface PlanVideo {
   repeatCount: number;
   matchReasons: string[];
   phaseReason: string;
+  scoreBreakdown: Array<{
+    rule: string;
+    label: string;
+    delta: number;
+    field?: string;
+    value?: string;
+  }>;
 }
 
 export interface CollectionInsight {
@@ -51,6 +60,7 @@ export interface TodayPlanResult {
   sourceText: string;
   insights: CollectionInsight | null;
   feedbackAdjustment?: string | null;
+  quality?: PlanQualityReport | null;
   explanation?: {
     summary: string;
     items: Array<{
@@ -58,6 +68,13 @@ export interface TodayPlanResult {
       detail: string;
       tone: "collection" | "fill" | "warn" | "playback" | "feedback";
       videoId?: string;
+      evidence?: {
+        type: string;
+        field?: string;
+        value?: string;
+        sourceCount?: number;
+        rule?: string;
+      };
     }>;
     goal: string;
   } | null;
@@ -66,6 +83,7 @@ export interface TodayPlanResult {
 function toPlanVideo(
   video: NonNullable<VideoWithTags> & { note: string; repeatCount?: number },
   profile: { goals: string; equipment: string; bodyConditions: string; fitnessLevel: string },
+  feedbackSignals?: Awaited<ReturnType<typeof getFeedbackSignals>>,
 ): PlanVideo {
   const reasons = getReasons(video, profile, video.note);
   return {
@@ -79,6 +97,7 @@ function toPlanVideo(
     repeatCount: video.repeatCount || 1,
     matchReasons: reasons.matchReasons,
     phaseReason: reasons.phaseReason,
+    scoreBreakdown: getScoreBreakdown(video, profile, feedbackSignals).slice(0, 6),
   };
 }
 
@@ -106,15 +125,24 @@ export async function generateTodayPlan(
     const recVideos = await getRecommendationVideos(userId, null);
     const phaseOrder = ["warmup", "main", "main", "main", "stretch"];
     const todayVideos = recVideos.slice(0, 5).map((v, i) => (
-      toPlanVideo({ ...v, note: phaseOrder[i] || "main", repeatCount: 1 }, profile)
+      toPlanVideo({ ...v, note: phaseOrder[i] || "main", repeatCount: 1 }, profile, feedbackSignals)
     ));
+    const finalVideos = trimToBudget(todayVideos, timeBudget);
+    const quality = await assessPlanQuality({
+      userId,
+      finalVideos,
+      userVideos,
+      profile,
+      timeBudgetSeconds: timeBudget,
+    });
 
     return {
-      todayVideos: trimToBudget(todayVideos, timeBudget),
+      todayVideos: finalVideos,
       goalText,
       sourceText: "基于你的运动画像自动生成，添加收藏后会优先使用你真正想练的内容",
       insights: null,
       feedbackAdjustment: feedbackSignals.summary,
+      quality,
       explanation: null,
     };
   }
@@ -162,12 +190,19 @@ export async function generateTodayPlan(
     ...finalWarmup.map((v) => ({ ...v, note: "warmup", repeatCount: 1 })),
     ...finalMain.map((v) => ({ ...v, note: "main", repeatCount: 1 })),
     ...finalStretch.map((v) => ({ ...v, note: "stretch", repeatCount: 1 })),
-  ].map((v) => toPlanVideo(v, profile));
+  ].map((v) => toPlanVideo(v, profile, feedbackSignals));
 
   const finalVideos = trimToBudget(todayVideos, timeBudget);
   const fromCollection = finalVideos.filter((v) => userVideos.some((uv) => uv.id === v.id)).length;
   const sourceText = `基于你收藏的 ${userVideos.length} 个视频生成，其中 ${fromCollection} 个来自你的收藏`;
   const insights = getCollectionInsights(userVideos, warmups, stretches, profile);
+  const quality = await assessPlanQuality({
+    userId,
+    finalVideos,
+    userVideos,
+    profile,
+    timeBudgetSeconds: timeBudget,
+  });
   const explanation = buildPlanExplanation({
     finalVideos,
     userVideos,
@@ -178,6 +213,22 @@ export async function generateTodayPlan(
     availableMinutes: Math.floor(timeBudget / 60),
     feedbackAdjustment: feedbackSignals.summary,
   });
+  const qualityItems = quality.issues
+    .filter((issue) => issue.severity === "critical" || issue.severity === "warning")
+    .map((issue) => ({
+      label: issue.severity === "critical" ? "质检拦截" : "质检提醒",
+      detail: issue.detail,
+      tone: "warn" as const,
+      evidence: {
+        type: "plan_quality",
+        field: issue.evidence.field,
+        value: issue.evidence.value,
+        rule: issue.evidence.rule,
+      },
+    }));
+  const explanationWithQuality = explanation
+    ? { ...explanation, items: [...qualityItems, ...explanation.items] }
+    : explanation;
 
   return {
     todayVideos: finalVideos,
@@ -185,6 +236,7 @@ export async function generateTodayPlan(
     sourceText,
     insights,
     feedbackAdjustment: feedbackSignals.summary,
-    explanation,
+    quality,
+    explanation: explanationWithQuality,
   };
 }

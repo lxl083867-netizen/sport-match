@@ -86,7 +86,23 @@ export default async function HomePage() {
   let goalText = "今日训练";
   let insights: CollectionInsight | null = null;
   let feedbackAdjustment: string | null = null;
-  let explanation: { summary: string; items: Array<{ label: string; detail: string; tone: "collection"|"fill"|"warn"|"playback"|"feedback"; videoId?: string }>; goal: string } | null = null;
+  let explanation: {
+    summary: string;
+    items: Array<{
+      label: string;
+      detail: string;
+      tone: "collection"|"fill"|"warn"|"playback"|"feedback";
+      videoId?: string;
+      evidence?: {
+        type: string;
+        field?: string;
+        value?: string;
+        sourceCount?: number;
+        rule?: string;
+      };
+    }>;
+    goal: string;
+  } | null = null;
   let refreshCount = 0;
   let canRefresh = true;
   const today = new Date().toISOString().slice(0, 10);
